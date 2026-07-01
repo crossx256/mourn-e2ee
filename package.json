@@ -1,0 +1,19 @@
+{
+  "name": "mourn-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone cryptographic core extracted from MOURN desktop for Signal-style E2EE messaging.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "libsodium-wrappers": "^0.7.11"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
