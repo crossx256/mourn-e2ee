@@ -1,7 +1,11 @@
-import sodium from 'libsodium-wrappers';
-import type { EncryptedMessage, LinkSecurityState, RatchetState } from './types';
-import { PaddingLayer } from './padding';
-import { DoubleRatchet } from './ratchet';
+import sodium from "libsodium-wrappers";
+import type {
+  EncryptedMessage,
+  LinkSecurityState,
+  RatchetState,
+} from "./types";
+import { PaddingLayer } from "./padding";
+import { DoubleRatchet } from "./ratchet";
 
 export class CipherEngine {
   private inited = false;
@@ -34,15 +38,15 @@ export class CipherEngine {
     let iAmInitiator: boolean;
 
     if (myUserId && theirUserId) {
-      const userIdString = [myUserId, theirUserId].sort().join('||');
+      const userIdString = [myUserId, theirUserId].sort().join("||");
       const hmacHash = await crypto.subtle.sign(
-        'HMAC',
+        "HMAC",
         await crypto.subtle.importKey(
-          'raw',
+          "raw",
           new Uint8Array(SK),
-          { name: 'HMAC', hash: 'SHA-256' },
+          { name: "HMAC", hash: "SHA-256" },
           false,
-          ['sign'],
+          ["sign"],
         ),
         new TextEncoder().encode(userIdString),
       );
@@ -50,7 +54,9 @@ export class CipherEngine {
       const roleValue = hmacArray[0] ?? 0;
       const myUserIdFirst = myUserId < theirUserId;
       const thisPartyIsInitiator = roleValue < 128;
-      iAmInitiator = myUserIdFirst ? thisPartyIsInitiator : !thisPartyIsInitiator;
+      iAmInitiator = myUserIdFirst
+        ? thisPartyIsInitiator
+        : !thisPartyIsInitiator;
     } else {
       iAmInitiator = sodium.compare(myDevicePub, theirDevicePub) < 0;
     }
@@ -58,14 +64,17 @@ export class CipherEngine {
     if (iAmInitiator) {
       ratchet.initSender(SK, theirDevicePub);
     } else {
-      ratchet.initReceiver(SK, { publicKey: myDevicePub, privateKey: myDevicePriv });
+      ratchet.initReceiver(SK, {
+        publicKey: myDevicePub,
+        privateKey: myDevicePriv,
+      });
     }
 
     this.ratchet = ratchet;
   }
 
   exportRatchetState(): RatchetState {
-    if (!this.ratchet) throw new Error('Engine not initialized');
+    if (!this.ratchet) throw new Error("Engine not initialized");
     return this.ratchet.exportState();
   }
 
@@ -86,18 +95,23 @@ export class CipherEngine {
 
   getLinkSecurityState(): LinkSecurityState {
     return {
-      storedIdentityKey: this.storedIdentityKey ? sodium.to_hex(this.storedIdentityKey) : undefined,
+      storedIdentityKey: this.storedIdentityKey
+        ? sodium.to_hex(this.storedIdentityKey)
+        : undefined,
       isCompromised: this.isCompromised,
     };
   }
 
   async encryptFrame(plaintext: string): Promise<EncryptedMessage> {
-    if (!this.ratchet) throw new Error('Engine not initialized');
+    if (!this.ratchet) throw new Error("Engine not initialized");
 
-    const nonce = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
+    const nonce = sodium.randombytes_buf(
+      sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES,
+    );
     const paddedMsg = PaddingLayer.applyPadding(plaintext);
 
-    const { messageKey, senderDHRPub, messageIndex, PN } = this.ratchet.ratchetForSend();
+    const { messageKey, senderDHRPub, messageIndex, PN } =
+      this.ratchet.ratchetForSend();
     const ad = buildAD(senderDHRPub, messageIndex, PN);
 
     const ciphertext = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
@@ -117,13 +131,14 @@ export class CipherEngine {
     cipherPkg: EncryptedMessage,
     opts?: { senderIdentityKey?: Uint8Array },
   ): Promise<string> {
-    if (!this.ratchet) throw new Error('Engine not initialized');
-    if (!cipherPkg.senderDHRPub) throw new Error('Missing senderDHRPub in packet');
+    if (!this.ratchet) throw new Error("Engine not initialized");
+    if (!cipherPkg.senderDHRPub)
+      throw new Error("Missing senderDHRPub in packet");
 
     this.assertIdentityKey(opts?.senderIdentityKey);
 
-    const msgIndex = cipherPkg.messageIndex ?? 0;
-    const pn = cipherPkg.PN ?? 0;
+    const msgIndex = assertFrameCounter(cipherPkg.messageIndex, "messageIndex");
+    const pn = assertFrameCounter(cipherPkg.PN, "PN");
 
     const { messageKey } = this.ratchet.processRatchetStep(
       cipherPkg.senderDHRPub,
@@ -146,26 +161,31 @@ export class CipherEngine {
       return PaddingLayer.stripPadding(paddedMsg);
     } catch (decryptErr) {
       const ratchetState = this.exportRatchetState();
-      console.error('[Engine] Decryption failed - AEAD authentication mismatch', {
-        reason: (decryptErr as Error).message,
-        ad_values: {
-          messageIndex: msgIndex,
-          PN: pn,
-          senderDHRPub_head: sodium.to_hex(cipherPkg.senderDHRPub).slice(0, 16),
+      console.error(
+        "[Engine] Decryption failed - AEAD authentication mismatch",
+        {
+          reason: (decryptErr as Error).message,
+          ad_values: {
+            messageIndex: msgIndex,
+            PN: pn,
+            senderDHRPub_head: sodium
+              .to_hex(cipherPkg.senderDHRPub)
+              .slice(0, 16),
+          },
+          packet_fields: {
+            messageIndex: cipherPkg.messageIndex,
+            PN: cipherPkg.PN,
+            has_nonce: !!cipherPkg.nonce,
+            has_ciphertext: !!cipherPkg.ciphertext,
+          },
+          ratchetState: {
+            Ns: ratchetState.Ns,
+            Nr: ratchetState.Nr,
+            PN: ratchetState.PN,
+            CKr_exists: !!ratchetState.CKr_hex,
+          },
         },
-        packet_fields: {
-          messageIndex: cipherPkg.messageIndex,
-          PN: cipherPkg.PN,
-          has_nonce: !!cipherPkg.nonce,
-          has_ciphertext: !!cipherPkg.ciphertext,
-        },
-        ratchetState: {
-          Ns: ratchetState.Ns,
-          Nr: ratchetState.Nr,
-          PN: ratchetState.PN,
-          CKr_exists: !!ratchetState.CKr_hex,
-        },
-      });
+      );
       throw decryptErr;
     }
   }
@@ -188,12 +208,28 @@ export class CipherEngine {
           receivedIdentityKey: senderIdentityKey,
         });
       }
-      throw new Error('Identity key mismatch detected for this link.');
+      throw new Error("Identity key mismatch detected for this link.");
     }
   }
 }
 
-function buildAD(senderDHRPub: Uint8Array, messageIndex: number, PN: number): Uint8Array {
+function assertFrameCounter(
+  value: unknown,
+  field: "messageIndex" | "PN",
+): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(
+      `Invalid encrypted frame header: ${field} must be a non-negative integer.`,
+    );
+  }
+  return value;
+}
+
+function buildAD(
+  senderDHRPub: Uint8Array,
+  messageIndex: number,
+  PN: number,
+): Uint8Array {
   const ad = new Uint8Array(32 + 4 + 4);
   ad.set(senderDHRPub, 0);
   new DataView(ad.buffer).setUint32(32, messageIndex, true);

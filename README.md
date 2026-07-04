@@ -3,6 +3,8 @@
 This module isolates the core MOURN desktop end-to-end encryption messaging primitives into a standalone TypeScript package.
 It is intended as a pure cryptographic engine for secure message ratcheting, key generation, and authenticated AEAD payload encryption.
 
+This repository is published for transparency. It intentionally shows how message keys, device keys, identity keys, padding, and ratchet state work without including our operational secrets.
+
 ## Protocol Overview
 
 The extracted architecture mirrors a Signal-style Double Ratchet with the following layers:
@@ -30,6 +32,38 @@ The extracted architecture mirrors a Signal-style Double Ratchet with the follow
 5. **Identity key verification and mismatch detection**
    - Optional sender identity key binding is supported.
    - If a previously bound identity key differs from a received identity key, the engine flags the link as compromised.
+
+## Public Security Boundary
+
+Included here:
+
+- Ed25519 identity key generation.
+- X25519 device key generation.
+- Initial shared-secret derivation with X25519 ECDH.
+- Signal-style Double Ratchet state transitions.
+- XChaCha20-Poly1305 authenticated encryption.
+- Padded plaintext buckets to reduce message-size leakage.
+- Optional identity-key TOFU / mismatch detection.
+
+## Device IDs vs Device Keys
+
+This package has **device keys**, instead of our DeviceID system. For security purposes.
+
+
+## Ratchet State Warning
+
+`exportRatchetState()` returns sensitive local client state. It contains live ratchet secrets, including root keys, chain keys, skipped message keys, and the current ratchet private key.
+
+Do not log, publish, transmit, or expose exported `RatchetState`. In an application, it should only be stored in local client-controlled storage appropriate for the platform.
+
+## Identity Verification Note
+
+Identity mismatch detection only works when callers consistently bind or provide identity public keys:
+
+- Call `bindIdentityKey()` after an out-of-band trust decision, or
+- Pass `senderIdentityKey` to `decryptFrame()` for every received message.
+
+If no identity key is supplied, the engine still decrypts authenticated ciphertext but cannot detect identity-key substitution for that frame.
 
 ## File & API Reference
 
@@ -102,7 +136,7 @@ Dependencies are intentionally minimal and focused on audited cryptographic prim
 
 ## Build & Validation
 
-Run the following in `mourn-e2e`:
+Run the following in `mourn-e2ee`:
 
 ```bash
 npm install
