@@ -1,0 +1,73 @@
+MOURN E2EE Transparency License
+
+Copyright (c) 2026 MOURN
+
+This software is made available for transparency, security review,
+education, and personal evaluation only.
+
+Permission is granted to view, download, and privately study this source
+code solely for transparency, security review, education, and personal
+evaluation.
+
+You may not:
+
+1. Use this software or any substantial portion of it in production.
+2. Use this software or any substantial portion of it for commercial
+   purposes.
+3. Sell, sublicense, rent, lease, or otherwise monetize this software.
+4. Redistribute modified or unmodified copies of this software.
+5. Incorporate this software into another application, service, library,
+   product, or platform.
+6. Use this software to provide a hosted service or software-as-a-service
+   offering.
+7. Use this software to create or operate a competing product or service.
+8. Remove or alter copyright, license, or attribution notices.
+9. Publish modified versions, forks, derivatives, or substantial portions
+   of this software without prior written permission from MOURN.
+
+Commercial Use, Redistribution, Modification, or Integration
+
+If you want to use, modify, redistribute, integrate, commercialize, or
+build upon this software in any way not expressly allowed by this license,
+you must request prior written permission from MOURN.
+
+Permission requests can be sent to:
+
+Discord: https://discord.gg/sGp8A3nfKj
+
+Please include:
+
+- who you are or what organization you represent;
+- how you want to use the software;
+- whether the use is commercial, research, educational, or personal;
+- whether you plan to modify, redistribute, host, or integrate it;
+- any relevant links, repositories, product details, or audit context.
+
+MOURN may approve, deny, or negotiate separate licensing terms at its sole
+discretion.
+
+Security Research
+
+Security researchers may reference this code in responsible disclosure
+reports, audits, articles, or discussions, provided they do not publish
+exploitable operational details, production secrets, or modified copies of
+the software.
+
+No Open Source License
+
+This software is source-available, not open source. No rights are granted
+except those expressly stated in this license. All rights not expressly
+granted are reserved by MOURN.
+
+No Patent License
+
+No patent license is granted.
+
+Disclaimer
+
+This software is provided for inspection only, "as is", without warranty
+of any kind, express or implied, including but not limited to the warranties
+of merchantability, fitness for a particular purpose, and noninfringement.
+
+Any use outside the permissions above requires prior written permission
+from the copyright holder.
